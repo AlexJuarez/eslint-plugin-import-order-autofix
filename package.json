@@ -1,0 +1,68 @@
+{
+  "name": "eslint-plugin-import-order-autofix",
+  "version": "0.8.1",
+  "description": "eslint-plugin-import/order autofixing.",
+  "engines": {
+    "node": ">=6"
+  },
+  "main": "lib/index.js",
+  "files": [
+    "lib"
+  ],
+  "scripts": {
+    "prepublish": "gulp prepublish"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AlexJuarez/eslint-plugin-import-order-autofix"
+  },
+  "keywords": [
+    "eslint",
+    "eslintplugin",
+    "es6",
+    "jsnext",
+    "modules",
+    "import",
+    "export",
+    "autofix"
+  ],
+  "author": "Alex Juarez <alexj@tune.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/AlexJuarez/eslint-plugin-import-order-autofix/issues"
+  },
+  "homepage": "https://github.com/AlexJuarez/eslint-plugin-import-order-autofix",
+  "devDependencies": {
+    "babel-eslint": "next",
+    "babel-plugin-istanbul": "^2.0.1",
+    "babel-preset-es2015-argon": "latest",
+    "babel-register": "6.16.3",
+    "eslint": "3.x",
+    "eslint-import-resolver-node": "file:./resolvers/node",
+    "eslint-import-resolver-webpack": "file:./resolvers/webpack",
+    "eslint-module-utils": "file:./utils",
+    "eslint-plugin-import": "2.x",
+    "gulp": "^3.9.0",
+    "gulp-babel": "6.1.2",
+    "istanbul": "^0.4.0",
+    "nyc": "^8.3.0"
+  },
+  "peerDependencies": {
+    "eslint": "2.x - 3.x"
+  },
+  "dependencies": {
+    "builtin-modules": "^1.1.1",
+    "eslint-import-resolver-node": "^0.2.0",
+    "eslint-module-utils": "^2.0.0",
+    "gulp-watch": "^4.3.11",
+    "jscodeshift": "^0.3.30",
+    "lodash.cond": "^4.3.0"
+  },
+  "nyc": {
+    "require": [
+      "babel-register"
+    ],
+    "sourceMap": false,
+    "instrument": false
+  }
+}
