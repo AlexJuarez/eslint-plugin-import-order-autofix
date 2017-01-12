@@ -2,6 +2,7 @@
 
 require('./../core/add-types');
 
+import { EOL } from 'os';
 import importType from '../core/importType'
 import isStaticRequire from '../core/staticRequire'
 
@@ -169,7 +170,7 @@ function fixNewLineAfterImport(context, previousImport) {
 
   const prevRoot = findRootNode(j, root, previousImport.node);
 
-  return (fixer) => fixer.insertTextAfter(prevRoot.node, '\n');
+  return (fixer) => fixer.insertTextAfter(prevRoot.node, EOL);
 }
 
 function removeNewLineAfterImport(context, currentImport, previousImport) {
