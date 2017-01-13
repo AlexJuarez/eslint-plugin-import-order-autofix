@@ -5,8 +5,15 @@ require('./../core/add-types');
 import { EOL } from 'os';
 import importType from '../core/importType'
 import isStaticRequire from '../core/staticRequire'
+import parser from 'babel-eslint';
 
 import jscodeshift from 'jscodeshift';
+const j = jscodeshift.withParser(parser);
+
+jscodeshift.types.Type.def('ExperimentalSpreadProperty').bases('Node');
+jscodeshift.types.Type.def('ExperimentalRestProperty').bases('Node');
+
+jscodeshift.types.finalize();
 
 const defaultGroups = ['builtin', 'external', 'parent', 'sibling', 'index']
 
@@ -56,7 +63,6 @@ function findRootNode(j, root, node) {
 }
 
 function fixOutOfOrder(context, firstNode, secondNode, order) {
-  const j = jscodeshift.withParser('babylon');
   const sourceCode = context.getSourceCode();
   const root = j(sourceCode.ast);
 
@@ -165,7 +171,6 @@ function convertGroupsToRanks(groups) {
 }
 
 function fixNewLineAfterImport(context, previousImport) {
-  const j = jscodeshift.withParser('babylon');
   const root = j(context.getSourceCode().ast);
 
   const prevRoot = findRootNode(j, root, previousImport.node);
@@ -174,7 +179,6 @@ function fixNewLineAfterImport(context, previousImport) {
 }
 
 function removeNewLineAfterImport(context, currentImport, previousImport) {
-  const j = jscodeshift.withParser('babylon');
   const root = j(context.getSourceCode().ast);
 
   const prevRoot = findRootNode(j, root, previousImport.node);
