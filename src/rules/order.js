@@ -1,19 +1,10 @@
 'use strict'
-
 require('./../core/add-types');
 
 import { EOL } from 'os';
 import importType from '../core/importType'
 import isStaticRequire from '../core/staticRequire'
 import parser from 'babel-eslint';
-
-import jscodeshift from 'jscodeshift';
-const j = jscodeshift.withParser(parser);
-
-jscodeshift.types.Type.def('ExperimentalSpreadProperty').bases('Node');
-jscodeshift.types.Type.def('ExperimentalRestProperty').bases('Node');
-
-jscodeshift.types.finalize();
 
 const defaultGroups = ['builtin', 'external', 'parent', 'sibling', 'index']
 
@@ -44,54 +35,46 @@ function findOutOfOrder(imported) {
 }
 
 
-function findRootNode(j, root, node) {
-  let result = null;
+function findRootNode(node) {
+  let result = node;
 
-  root
-    .find(j.Node)
-    .filter((p) => p.node === node).forEach(p => {
-    let parent = p;
-
-    while (parent.parent != null && parent.parent.value.body == null) {
-      parent = parent.parent;
-    }
-
-    result = parent;
-  });
+  while (result.parent != null && result.parent.body == null) {
+    result = result.parent;
+  }
 
   return result;
 }
 
 function fixOutOfOrder(context, firstNode, secondNode, order) {
   const sourceCode = context.getSourceCode();
-  const root = j(sourceCode.ast);
 
-  const firstRoot = findRootNode(j, root, firstNode.node);
-  const secondRoot = findRootNode(j, root, secondNode.node);
-  const newCode = sourceCode.getText(secondRoot.node);
+  const firstRoot = findRootNode(firstNode.node);
+  const secondRoot = findRootNode(secondNode.node);
+  const beforeToken = sourceCode.getTokenBefore(secondRoot);
+  const newCode = sourceCode.getText(secondRoot);
 
-  const msg = () => `\`${secondNode.name}\` import should occur ${order}` +
-    ` import \`${firstNode.name}\``;
+  const msg = () => '`' + secondNode.name + '` import should occur ' + order +
+      ' import of `' + firstNode.name + '`';
 
   if (order === 'before') {
     context.report({
       node: secondNode.node,
       message: msg(),
-      fix: fixer => fixer.insertTextBefore(firstRoot.node, newCode)
+      fix: fixer => [
+        fixer.remove(secondRoot),
+        fixer.insertTextBefore(firstRoot, newCode),
+      ],
     });
   } else if (order === 'after') {
     context.report({
       node: secondNode.node,
       message: msg(),
-      fix: fixer => fixer.insertTextAfter(firstRoot.node, newCode)
+      fix: fixer => [
+        fixer.remove(secondRoot),
+        fixer.insertTextAfter(firstRoot, newCode),
+      ]
     });
   }
-
-  context.report({
-    node: secondNode.node,
-    message: msg(),
-    fix: fixer => fixer.remove(secondRoot.node)
-  });
 }
 
 function reportOutOfOrder(context, imported, outOfOrder, order) {
@@ -171,20 +154,16 @@ function convertGroupsToRanks(groups) {
 }
 
 function fixNewLineAfterImport(context, previousImport) {
-  const root = j(context.getSourceCode().ast);
+  const prevRoot = findRootNode(previousImport.node);
 
-  const prevRoot = findRootNode(j, root, previousImport.node);
-
-  return (fixer) => fixer.insertTextAfter(prevRoot.node, EOL);
+  return (fixer) => fixer.insertTextAfter(prevRoot, EOL);
 }
 
 function removeNewLineAfterImport(context, currentImport, previousImport) {
-  const root = j(context.getSourceCode().ast);
+  const prevRoot = findRootNode(previousImport.node);
+  const currRoot = findRootNode(currentImport.node);
 
-  const prevRoot = findRootNode(j, root, previousImport.node);
-  const currRoot = findRootNode(j, root, currentImport.node);
-
-  return (fixer) => fixer.removeRange([prevRoot.node.range[1] + 1, currRoot.node.range[0]]);
+  return (fixer) => fixer.removeRange([prevRoot.range[1] + 1, currRoot.range[0]]);
 }
 
 function makeNewlinesBetweenReport (context, imported, newlinesBetweenImports) {
@@ -196,26 +175,29 @@ function makeNewlinesBetweenReport (context, imported, newlinesBetweenImports) {
 
     return linesBetweenImports.filter((line) => !line.trim().length).length
   }
-
   let previousImport = imported[0]
 
   imported.slice(1).forEach(function(currentImport) {
-    const emptyLinesCount = getNumberOfEmptyLinesBetween(currentImport, previousImport);
-    if (newlinesBetweenImports === 'always') {
-      if (currentImport.rank !== previousImport.rank && emptyLinesCount === 0) {
+    const emptyLinesBetween = getNumberOfEmptyLinesBetween(currentImport, previousImport)
+
+    if (newlinesBetweenImports === 'always'
+        || newlinesBetweenImports === 'always-and-inside-groups') {
+      if (currentImport.rank !== previousImport.rank && emptyLinesBetween === 0) {
         context.report({
           node: previousImport.node,
           message: 'There should be at least one empty line between import groups',
           fix: fixNewLineAfterImport(context, previousImport)
         });
-      } else if (currentImport.rank === previousImport.rank && emptyLinesCount > 0) {
+      } else if (currentImport.rank === previousImport.rank
+        && emptyLinesBetween > 0
+        && newlinesBetweenImports !== 'always-and-inside-groups') {
         context.report({
           node: previousImport.node,
           message: 'There should be no empty line within import group',
           fix: removeNewLineAfterImport(context, currentImport, previousImport)
         });
       }
-    } else if (emptyLinesCount > 0) {
+    } else if (emptyLinesBetween > 0) {
       context.report({
         node: previousImport.node,
         message: 'There should be no empty line between import groups',
@@ -239,7 +221,7 @@ module.exports = {
             type: 'array',
           },
           'newlines-between': {
-            enum: [ 'ignore', 'always', 'never' ],
+            enum: [ 'ignore', 'always', 'never', 'always-and-inside-groups' ],
           },
         },
         additionalProperties: false,

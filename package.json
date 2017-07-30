@@ -39,7 +39,7 @@
     "babel-plugin-istanbul": "^2.0.1",
     "babel-preset-es2015-argon": "latest",
     "babel-register": "6.16.3",
-    "eslint": "3.x",
+    "eslint": "4.x",
     "eslint-import-resolver-node": "file:./resolvers/node",
     "eslint-import-resolver-webpack": "file:./resolvers/webpack",
     "eslint-module-utils": "file:./utils",
@@ -52,12 +52,12 @@
     "nyc": "^8.3.0"
   },
   "peerDependencies": {
-    "eslint": "2.x - 3.x"
+    "eslint": "2.x - 4.x"
   },
   "dependencies": {
     "builtin-modules": "^1.1.1",
-    "eslint-import-resolver-node": "^0.2.0",
-    "eslint-module-utils": "^2.0.0",
+    "eslint-import-resolver-node": "^0.3.1",
+    "eslint-module-utils": "^2.1.1",
     "gulp-watch": "^4.3.11",
     "jscodeshift": "^0.3.30",
     "lodash.cond": "^4.3.0"
