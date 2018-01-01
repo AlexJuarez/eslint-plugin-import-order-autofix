@@ -77,21 +77,21 @@ function fixOutOfOrder(context, firstNode, secondNode, order) {
     context.report({
       node: secondNode.node,
       message: msg(),
-      fix: fixer => fixer.insertTextBefore(firstRoot.node, newCode)
+      fix: fixer => [
+        fixer.insertTextBefore(firstRoot.node, newCode + "\n"),
+        fixer.remove(secondRoot.node),
+      ]
     });
   } else if (order === 'after') {
     context.report({
       node: secondNode.node,
       message: msg(),
-      fix: fixer => fixer.insertTextAfter(firstRoot.node, newCode)
+      fix: fixer => [
+        fixer.insertTextAfter(firstRoot.node, "\n" + newCode),
+        fixer.remove(secondRoot.node),
+      ]
     });
   }
-
-  context.report({
-    node: secondNode.node,
-    message: msg(),
-    fix: fixer => fixer.remove(secondRoot.node)
-  });
 }
 
 function reportOutOfOrder(context, imported, outOfOrder, order) {
