@@ -1,8 +1,8 @@
-import cond from 'lodash.cond'
-import builtinModules from 'builtin-modules'
-import { join } from 'path'
+const cond = require('lodash.cond')
+const builtinModules = require('builtin-modules')
+const { join } = require('path')
 
-import resolve from 'eslint-module-utils/resolve'
+const resolve = require('eslint-module-utils/resolve').default
 
 function constant(value) {
   return () => value
@@ -12,7 +12,7 @@ function isAbsolute(name) {
   return name.indexOf('/') === 0
 }
 
-export function isBuiltIn(name, settings) {
+function isBuiltIn(name, settings) {
   const extras = (settings && settings['import/core-modules']) || []
   return builtinModules.indexOf(name) !== -1 || extras.indexOf(name) > -1
 }
@@ -61,6 +61,6 @@ const typeTest = cond([
   [constant(true), constant('unknown')],
 ])
 
-export default function resolveImportType(name, context) {
+module.exports = function resolveImportType(name, context) {
   return typeTest(name, context.settings, resolve(name, context))
 }

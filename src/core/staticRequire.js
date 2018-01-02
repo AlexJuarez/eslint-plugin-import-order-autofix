@@ -1,5 +1,5 @@
 // todo: merge with module visitor
-export default function isStaticRequire(node) {
+module.exports = function isStaticRequire(node) {
   return node &&
     node.callee &&
     node.callee.type === 'Identifier' &&
