@@ -1,19 +1,17 @@
-'use strict'
+require('./../core/add-types')
 
-require('./../core/add-types');
+const { EOL } = require('os')
+const importType = require('../core/importType')
+const isStaticRequire = require('../core/staticRequire')
+const parser = require('babel-eslint')
 
-import { EOL } from 'os';
-import importType from '../core/importType'
-import isStaticRequire from '../core/staticRequire'
-import parser from 'babel-eslint';
+const jscodeshift = require('jscodeshift')
+const j = jscodeshift.withParser(parser)
 
-import jscodeshift from 'jscodeshift';
-const j = jscodeshift.withParser(parser);
+jscodeshift.types.Type.def('ExperimentalSpreadProperty').bases('Node')
+jscodeshift.types.Type.def('ExperimentalRestProperty').bases('Node')
 
-jscodeshift.types.Type.def('ExperimentalSpreadProperty').bases('Node');
-jscodeshift.types.Type.def('ExperimentalRestProperty').bases('Node');
-
-jscodeshift.types.finalize();
+jscodeshift.types.finalize()
 
 const defaultGroups = ['builtin', 'external', 'parent', 'sibling', 'index']
 
@@ -44,54 +42,54 @@ function findOutOfOrder(imported) {
 }
 
 
-function findRootNode(j, root, node) {
-  let result = null;
+function findRootNode(root, node) {
+  let result = null
 
   root
     .find(j.Node)
     .filter((p) => p.node === node).forEach(p => {
-    let parent = p;
+    let parent = p
 
     while (parent.parent != null && parent.parent.value.body == null) {
-      parent = parent.parent;
+      parent = parent.parent
     }
 
-    result = parent;
-  });
+    result = parent
+  })
 
-  return result;
+  return result
 }
 
 function fixOutOfOrder(context, firstNode, secondNode, order) {
-  const sourceCode = context.getSourceCode();
-  const root = j(sourceCode.ast);
+  const sourceCode = context.getSourceCode()
+  const root = j(sourceCode.ast)
 
-  const firstRoot = findRootNode(j, root, firstNode.node);
-  const secondRoot = findRootNode(j, root, secondNode.node);
-  const newCode = sourceCode.getText(secondRoot.node);
+  const firstRoot = findRootNode(root, firstNode.node)
+  const secondRoot = findRootNode(root, secondNode.node)
+  const newCode = sourceCode.getText(secondRoot.node)
 
   const msg = () => `\`${secondNode.name}\` import should occur ${order}` +
-    ` import \`${firstNode.name}\``;
+    ` import \`${firstNode.name}\``
 
   if (order === 'before') {
     context.report({
       node: secondNode.node,
       message: msg(),
-      fix: fixer => fixer.insertTextBefore(firstRoot.node, newCode)
-    });
+      fix: fixer => [
+        fixer.insertTextBefore(firstRoot.node, newCode + '\n'),
+        fixer.remove(secondRoot.node),
+      ],
+    })
   } else if (order === 'after') {
     context.report({
       node: secondNode.node,
       message: msg(),
-      fix: fixer => fixer.insertTextAfter(firstRoot.node, newCode)
-    });
+      fix: fixer => [
+        fixer.insertTextAfter(firstRoot.node, '\n' + newCode),
+        fixer.remove(secondRoot.node),
+      ],
+    })
   }
-
-  context.report({
-    node: secondNode.node,
-    message: msg(),
-    fix: fixer => fixer.remove(secondRoot.node)
-  });
 }
 
 function reportOutOfOrder(context, imported, outOfOrder, order) {
@@ -99,7 +97,7 @@ function reportOutOfOrder(context, imported, outOfOrder, order) {
     const found = imported.find(function hasHigherRank(importedItem) {
       return importedItem.rank > imp.rank
     })
-    fixOutOfOrder(context, found, imp, order);
+    fixOutOfOrder(context, found, imp, order)
   })
 }
 
@@ -171,20 +169,20 @@ function convertGroupsToRanks(groups) {
 }
 
 function fixNewLineAfterImport(context, previousImport) {
-  const root = j(context.getSourceCode().ast);
+  const root = j(context.getSourceCode().ast)
 
-  const prevRoot = findRootNode(j, root, previousImport.node);
+  const prevRoot = findRootNode(root, previousImport.node)
 
-  return (fixer) => fixer.insertTextAfter(prevRoot.node, EOL);
+  return (fixer) => fixer.insertTextAfter(prevRoot.node, EOL)
 }
 
 function removeNewLineAfterImport(context, currentImport, previousImport) {
-  const root = j(context.getSourceCode().ast);
+  const root = j(context.getSourceCode().ast)
 
-  const prevRoot = findRootNode(j, root, previousImport.node);
-  const currRoot = findRootNode(j, root, currentImport.node);
+  const prevRoot = findRootNode(root, previousImport.node)
+  const currRoot = findRootNode(root, currentImport.node)
 
-  return (fixer) => fixer.removeRange([prevRoot.node.range[1] + 1, currRoot.node.range[0]]);
+  return (fixer) => fixer.removeRange([prevRoot.node.range[1] + 1, currRoot.node.range[0]])
 }
 
 function makeNewlinesBetweenReport (context, imported, newlinesBetweenImports) {
@@ -200,27 +198,27 @@ function makeNewlinesBetweenReport (context, imported, newlinesBetweenImports) {
   let previousImport = imported[0]
 
   imported.slice(1).forEach(function(currentImport) {
-    const emptyLinesCount = getNumberOfEmptyLinesBetween(currentImport, previousImport);
+    const emptyLinesCount = getNumberOfEmptyLinesBetween(currentImport, previousImport)
     if (newlinesBetweenImports === 'always') {
       if (currentImport.rank !== previousImport.rank && emptyLinesCount === 0) {
         context.report({
           node: previousImport.node,
           message: 'There should be at least one empty line between import groups',
-          fix: fixNewLineAfterImport(context, previousImport)
-        });
+          fix: fixNewLineAfterImport(context, previousImport),
+        })
       } else if (currentImport.rank === previousImport.rank && emptyLinesCount > 0) {
         context.report({
           node: previousImport.node,
           message: 'There should be no empty line within import group',
-          fix: removeNewLineAfterImport(context, currentImport, previousImport)
-        });
+          fix: removeNewLineAfterImport(context, currentImport, previousImport),
+        })
       }
     } else if (emptyLinesCount > 0) {
       context.report({
         node: previousImport.node,
         message: 'There should be no empty line between import groups',
-        fix: removeNewLineAfterImport(context, currentImport, previousImport)
-      });
+        fix: removeNewLineAfterImport(context, currentImport, previousImport),
+      })
     }
 
     previousImport = currentImport
