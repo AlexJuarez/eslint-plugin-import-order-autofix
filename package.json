@@ -39,7 +39,7 @@
     "babel-plugin-istanbul": "^2.0.1",
     "babel-preset-es2015-argon": "latest",
     "babel-register": "6.16.3",
-    "eslint": "3.x",
+    "eslint": "6.x",
     "eslint-import-resolver-node": "file:./resolvers/node",
     "eslint-import-resolver-webpack": "file:./resolvers/webpack",
     "eslint-module-utils": "file:./utils",
